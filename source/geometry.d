@@ -269,7 +269,6 @@ double dihed(in double[4][3] list)
 
 	if (abs_n1_n2 < 0.0)
 	{
-		//writeln("warning: dihedral angle not defined.");
 		phi = 0.0;
 		return (phi);
 	}
@@ -286,12 +285,6 @@ double dihed(in double[4][3] list)
 	{
 		phi = -acos(n1_n2 / sqrt(abs_n1_n2));
 	}
-
-	/*printf("the dihedral angle is (remember it is in radians) %f\n",phi);
-    phi = (180.0/3.14159) * phi;
-    */
-
-	/*printf("the dihedral angle is %f\n",phi);*/
 
 	phi = (180.0 / PI) * phi;
 	return (phi);

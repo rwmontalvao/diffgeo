@@ -631,13 +631,15 @@ class PDB
 			auto res_keys = sort!("a < b")(this.models[mk].residues.keys);
 			foreach (rk; res_keys)
 			{
-				out_file.writefln("%03d,%3s,%1s,%04d,%7.4f,%7.4f",
+				out_file.writefln("%03d,%3s,%1s,%04d,%7.4f,%7.4f,%9.6f,%9.6f",
 					mk,
 					this.models[mk].residues[rk].name,
 					this.models[mk].residues[rk].atoms["CA"].chainID,
 					this.models[mk].residues[rk].resSeq,
 					this.models[mk].residues[rk].curvature,
-					this.models[mk].residues[rk].torsion);
+					this.models[mk].residues[rk].torsion,
+					this.models[mk].residues[rk].writhing,
+					this.models[mk].residues[rk].arc_length);
 			}
 		}
 		out_file.close();

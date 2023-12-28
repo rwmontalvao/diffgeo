@@ -1,6 +1,6 @@
 # diffgeo
 
-This program compute curvature and torsion for PDB files
+This program computes curvature, torsion and writhing number for PDB files.
 
 ## How to compile
 
@@ -12,8 +12,13 @@ cd ./diffgeo
 dub build --build=release --compiler=dmd
 ```
 
-## How to use
+## Usage
 
 ```
-./diffgeo --id 2lj5 --cores 4 --verbose
+diffgeo --pdbpath input/2lj5.pdb --threads 4 --outCsvPath ./my.csv
 ```
+
+- `--pdbPath`: path of input PDB file
+- `--threads`: number of threads
+- `--outCsvPath`: path of output CSV file (default: ./filename.csv)
+- `-h` or `--help`: show help information.

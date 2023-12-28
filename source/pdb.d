@@ -1,4 +1,20 @@
-﻿module pdb;
+﻿// Copyright 2021 KU Leuven.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Author: Rinaldo Wander Montalvão, PhD
+//
+module pdb;
 
 /** It assumes the following PDB format ********************************************** 
  *  1 -  6        Record name     "ATOM  "
@@ -420,10 +436,10 @@ class PDB
 	}
 
 	// Class constructor
-	this(in string ID, in string file_name, in int nCPUs, in bool verbose)
+	this(in string ID, in string file_name, in int nCPUs)
 	{
 		// List of known residues
-		auto residue_codes = [
+		const auto residue_codes = [
 			"CYS",
 			"ASP",
 			"ALA",
@@ -447,6 +463,8 @@ class PDB
 			"MSE"
 		];
 
+		const auto atom_names = ["N", "CA", "C"];
+
 		int last_residue = -999;
 
 		int model_number = 1;
@@ -460,17 +478,14 @@ class PDB
 			count++;
 
 		Bar bar = new Bar();
-		if (verbose)
-		{
-			bar.message = { return "Loading"; };
-			bar.suffix = { return bar.percent.to!string ~ "%"; };
-			bar.max = count;
-		}
+		bar.message = { return "Loading"; };
+		bar.suffix = { return bar.percent.to!string ~ "%"; };
+		bar.max = count;
+
 		//Parse PDB atoms
 		foreach (line; File(file_name).byLine())
 		{
-			if (verbose)
-				bar.next();
+			bar.next();
 
 			// Select model
 			if (line.indexOf("MODEL") == 0)
@@ -495,7 +510,8 @@ class PDB
 
 			// Filter for known residues
 			auto residue_name = to!string(strip(line[17 .. 20]));
-			if (!residue_codes.canFind(residue_name))
+			string name = to!string(strip(line[12 .. 16])); // atom name
+			if (!residue_codes.canFind(residue_name) || !atom_names.canFind(name))
 				continue;
 
 			// Check for new residue
@@ -510,8 +526,6 @@ class PDB
 			}
 
 			// Process atom data
-			string name = to!string(strip(line[12 .. 16]));
-
 			this.models[model_number].residues[curr_residue].atoms[name] = new Atom(name);
 
 			this.models[model_number].residues[curr_residue].atoms[name].serial = to!int(
@@ -533,8 +547,7 @@ class PDB
 			this.models[model_number].residues[curr_residue].atoms[name].tempFactor = to!double(
 				strip(line[60 .. 66]));
 		}
-		if (verbose)
-			bar.finish();
+		bar.finish();
 
 		double start = 1.0;
 		double stop = to!double(this.models.length);
@@ -609,8 +622,7 @@ class PDB
 						this.models[mk].residues[rk].resSeq,
 						this.models[mk].residues[rk].atoms[ak].x,
 						this.models[mk].residues[rk].atoms[ak].y,
-						this.models[mk].residues[rk].atoms[ak].z, //this.models[mk].residues[rk].phi,
-						//this.models[mk].residues[rk].psi);
+						this.models[mk].residues[rk].atoms[ak].z, 
 						this.models[mk].residues[rk].atoms[ak].occupancy,
 						this.models[mk].residues[rk].atoms[ak].tempFactor);
 				}
@@ -621,26 +633,33 @@ class PDB
 		out_file.close();
 	}
 
-	// Save a PDB file.
+	// Save a CSV file.
 	void save_csv(in string file_name)
 	{
 		File out_file = File(file_name, "w");
+		out_file.writefln("id,model,code,chain,order,name,curvature,torsion,arc_length,writhing,phi,psi");
 		auto model_keys = sort!("a < b")(this.models.keys);
 		foreach (mk; model_keys)
 		{
 			auto res_keys = sort!("a < b")(this.models[mk].residues.keys);
+			int id = 0;
 			foreach (rk; res_keys)
 			{
-				out_file.writefln("%03d,%3s,%1s,%04d,%7.4f,%7.4f,%9.6f,%9.6f",
-					mk,
-					this.models[mk].residues[rk].name,
+				out_file.writefln("%d,%d,%s,%s,%d,%s,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f",
+					id,
+					mk-1,
+					this.ID.toUpper,
 					this.models[mk].residues[rk].atoms["CA"].chainID,
 					this.models[mk].residues[rk].resSeq,
+					this.models[mk].residues[rk].name,
 					this.models[mk].residues[rk].curvature,
 					this.models[mk].residues[rk].torsion,
+					this.models[mk].residues[rk].arc_length,
 					this.models[mk].residues[rk].writhing,
-					this.models[mk].residues[rk].arc_length);
+					this.models[mk].residues[rk].phi,
+					this.models[mk].residues[rk].psi);
 			}
+			id++;
 		}
 		out_file.close();
 	}

@@ -23,46 +23,72 @@ import std.conv;
 import std.stdio;
 import std.getopt;
 import std.parallelism;
+import std.path : baseName, stripExtension; // Importing necessary functions from std.path
+import std.stdio : writeln; // Importing writeln for output
+
+string getSimpleName(string filePath) {
+    // Extract the base filename using baseName
+    string fileName = filePath.baseName;
+    
+    // Strip the extension using stripExtension
+    fileName = fileName.stripExtension;
+
+    return fileName;
+}
 
 void main(string[] args)
 {
-	string id;
-
+	string pdbPath;
 	int cCPUS = 1;
+	string outCsvPath;
 
 	auto helpInformation = getopt(args,
-		"id", "file id: id.pdb -> id.csv", &id,
-		"threads", "number of threads", &cCPUS);
+		"pdbPath", "path of input PDB file", &pdbPath,
+		"threads", "number of threads", &cCPUS,
+		"outCsvPath", "path of output CSV file (default: ./filename.csv)", &outCsvPath);
 
 	if (helpInformation.helpWanted)
 	{
-		defaultGetoptPrinter("This program compute curvature and torsion for PDB files.",
+		defaultGetoptPrinter("This program compute curvature, torsion and writhing number for PDB files.",
 			helpInformation.options);
 	}
 
-	int nCPUs = totalCPUs;
-	if (cCPUS <= totalCPUs)
-		nCPUs = cCPUS;
+	else {
+		// get simple name
+		string filename = getSimpleName(pdbPath);
 
-	writeln();
-	writeln("DiffGeo Neural Network 0.1");
-	writeln("Copyright (c) 2022 Rinaldo Wander Montalvão");
-	writeln();
-	writefln("Threads : %d", nCPUs);
-	writefln("PDB id  : %s\n", id);
+		// if output file path not provided, set simplename .csv as standard
+		if (outCsvPath.length == 0)
+				outCsvPath = "./" ~ filename ~ ".csv";
+		
+		int nCPUs = totalCPUs;
+		if (cCPUS <= totalCPUs)
+			nCPUs = cCPUS;
 
-	try
-	{
-		auto pdb_file = new PDB(id, id ~ ".pdb", nCPUs);
-
-		pdb_file.save_csv(id ~ ".csv");
-	}
-	catch (Exception e)
-	{
 		writeln();
-		if (id.length == 0)
-			writeln("Error: empty file id.");
-		else
-			writeln(e.msg);
+		writeln("DiffGeo Neural Network 0.1");
+		writeln("Copyright (c) 2022 Rinaldo Wander Montalvão");
+		writeln();
+		writefln("Threads : %d", nCPUs);
+		writefln("PDB id  : %s\n", filename);
+		writefln("PDB path: %s\n", pdbPath);
+		writefln("");
+		try
+		{
+			auto pdb_file = new PDB(filename, pdbPath, nCPUs);
+
+			string csv_path = outCsvPath;
+			writefln("-> %s", csv_path);
+			pdb_file.save_csv(csv_path);
+
+		}
+		catch (Exception e)
+		{
+			writeln();
+			if (pdbPath.length == 0)
+				writeln("Error: empty file path.");
+			else
+				writeln(e.msg);
+		}
 	}
 }
